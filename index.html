@@ -67,36 +67,34 @@
       background: #f3f4f6;
     }
 
-    #message {
-      margin: 10px 0 0;
-      font-size: clamp(18px, 4vw, 26px);
-      font-weight: 800;
-      min-height: 1.5em; /* reserves space so layout doesn’t jump */
-    }
+    .bottom-area{
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
 
-    .buttons {
-      margin-top: 14px;
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+/* Give the message a stable spot */
+#message{
+  margin: 0;
+  font-size: clamp(18px, 4vw, 26px);
+  font-weight: 800;
+  min-height: 2.2em;   /* more room for 1-2 lines */
+  text-align: center;
+  line-height: 1.2;
+}
 
-    button {
-      border: 0;
-      padding: 14px 18px;
-      border-radius: 999px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 18px rgba(0,0,0,0.10);
-      transition: transform 160ms ease, filter 160ms ease, opacity 160ms ease;
-      min-width: 120px;
-      touch-action: manipulation;
-    }
+/* This is the key: reserve vertical space for scaled buttons */
+.buttons{
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 56px;   /* baseline; JS will increase this */
+}
 
-    button:active { transform: scale(0.98); }
+/* IMPORTANT: don't use transform on :active (it overrides your scaling) */
+button:active { filter: brightness(0.95); }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
 
     #yesBtn { background: var(--yes); color: white; }
@@ -117,7 +115,14 @@
     <div class="photo-wrap">
       <img id="mainPhoto" src="images/me.jpg" alt="A photo" />
     </div>
+<div class="bottom-area">
+  <div id="message" aria-live="polite"></div>
 
+  <div class="buttons" id="buttonsWrap">
+    <button id="yesBtn" type="button">Yes</button>
+    <button id="noBtn" type="button">No</button>
+  </div>
+</div>
     <div id="message" aria-live="polite"></div>
 
     <div class="buttons">
@@ -144,7 +149,13 @@
 
     // Optional: message for the "No" path
     const noMessagePrefix = ""; // e.g. "Please reconsider... "
+  const buttonsWrap = document.getElementById("buttonsWrap");
 
+  function updateButtonsLayoutSpace() {
+  // Measure the actual rendered height of the buttons container
+  // and force the layout to reserve at least that much space.
+  const h = buttonsWrap.getBoundingClientRect().height;
+  buttonsWrap.style.minHeight = `${Math.ceil(h)}px`;
     // ===========
     // LOGIC
     // ===========
@@ -163,33 +174,19 @@
       img.src = src;
     }
 
-    function updateYesButtonSize() {
-      // Increase yes button scale a bit each NO click, capped at 20.
-      // At 20 clicks, scale = 1 + (0.12 * 20) = 3.4 (big but still manageable on mobile)
-      const capped = Math.min(noCount, 10);
-      const scale = 1 + (0.011 * capped);
-      yesBtn.style.transform = `scale(${scale})`;
-    }
-    function updateNoButtonSize() {
-  // Decrease NO button scale per click, capped at 20
+   function updateYesButtonSize() {
   const capped = Math.min(noCount, 10);
+  const scale = 1 + (0.011 * capped);
+  yesBtn.style.transform = `scale(${scale})`;
+}
 
-  // Minimum scale so it never disappears
+function updateNoButtonSize() {
+  const capped = Math.min(noCount, 10);
   const minScale = 0.3;
-
-  const scale = Math.max(
-    minScale,
-    1 - (0.04 * capped)
-  );
-
+  const scale = Math.max(minScale, 1 - (0.04 * capped));
   noBtn.style.transform = `scale(${scale})`;
-    }
-    noBtn.addEventListener("click", () => {
-  if (noCount >= 10) return;
-  noCount += 1;
-
-  updateNoButtonSize();   // <-- must be called
-});
+}
+    updateButtonsLayoutSpace();
     yesBtn.addEventListener("click", () => {
       if (locked) return;
       locked = true;
@@ -205,21 +202,26 @@
     });
 
     noBtn.addEventListener("click", () => {
-      if (locked) return;
+  if (locked) return;
+  if (noCount >= 10) return;
 
-      // Only change state up to the 20th click
-      if (noCount >= 10) {
-        return; // 21 clicks and beyond: no changes
-      }
+  noCount += 1;
 
-      noCount += 1;
+  setImage(noImages[noCount - 1]);
+  updateYesButtonSize();
+  updateNoButtonSize();
 
+  updateButtonsLayoutSpace(); // <-- key line
+
+  msg.textContent = "";
+});
       // Swap image for this click
       setImage(noImages[noCount - 1]);
 
       // Grow YES button
       updateYesButtonSize();
-
+window.addEventListener("load", updateButtonsLayoutSpace);
+window.addEventListener("resize", updateButtonsLayoutSpace);
       // Optional text feedback (can be blank)
       if (noMessagePrefix) {
         msg.textContent = `${noMessagePrefix}${noCount}/10`;
