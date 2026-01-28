@@ -166,7 +166,7 @@
     function updateYesButtonSize() {
       // Increase yes button scale a bit each NO click, capped at 20.
       // At 20 clicks, scale = 1 + (0.12 * 20) = 3.4 (big but still manageable on mobile)
-      const capped = Math.min(noCount, 10);
+      const capped = Math.min(noCount, 20);
       const scale = 1 + (0.113 * capped);
       yesBtn.style.transform = `scale(${scale})`;
     }
@@ -185,7 +185,7 @@
   noBtn.style.transform = `scale(${scale})`;
     }
     noBtn.addEventListener("click", () => {
-  if (noCount >= 20) return;
+  if (noCount >= 10) return;
   noCount += 1;
 
   updateNoButtonSize();   // <-- must be called
