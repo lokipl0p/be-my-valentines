@@ -167,7 +167,7 @@
       // Increase yes button scale a bit each NO click, capped at 20.
       // At 20 clicks, scale = 1 + (0.12 * 20) = 3.4 (big but still manageable on mobile)
       const capped = Math.min(noCount, 10);
-      const scale = 1 + (0.11 * capped);
+      const scale = 1 + (0.011 * capped);
       yesBtn.style.transform = `scale(${scale})`;
     }
     function updateNoButtonSize() {
