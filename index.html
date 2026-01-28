@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Will you be my Valentine?</title>
+
   <style>
     :root {
       --bg: #fff7fb;
@@ -17,6 +18,7 @@
     }
 
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
@@ -53,7 +55,7 @@
       width: 100%;
       display: grid;
       place-items: center;
-      margin: 10px 0 14px;
+      margin: 10px 0 10px;
     }
 
     img#mainPhoto {
@@ -67,38 +69,52 @@
       background: #f3f4f6;
     }
 
-    .bottom-area{
-  display: grid;
-  gap: 12px;
-  justify-items: center;
-}
+    .bottom-area {
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
 
-/* Give the message a stable spot */
-#message{
-  margin: 0;
-  font-size: clamp(18px, 4vw, 26px);
-  font-weight: 800;
-  min-height: 2.2em;   /* more room for 1-2 lines */
-  text-align: center;
-  line-height: 1.2;
-}
+    #message {
+      margin: 0;
+      font-size: clamp(18px, 4vw, 26px);
+      font-weight: 800;
+      line-height: 1.2;
+      text-align: center;
+      min-height: 2.2em; /* space for 1–2 lines, avoids overlap/jump */
+    }
 
-/* This is the key: reserve vertical space for scaled buttons */
-.buttons{
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  min-height: 56px;   /* baseline; JS will increase this */
-}
+    .buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      /* We'll keep layout stable by changing padding/font-size (not transform). */
+    }
 
-/* IMPORTANT: don't use transform on :active (it overrides your scaling) */
-button:active { filter: brightness(0.95); }
+    button {
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.10);
+      transition: filter 160ms ease, opacity 160ms ease;
+      min-width: 120px;
+      touch-action: manipulation;
+
+      /* baseline sizing (will be overridden by CSS variables per-button) */
+      font-size: 16px;
+      padding: 14px 18px;
+      font-weight: 800;
+    }
+
+    /* Don't use transform on :active, it can fight dynamic sizing */
+    button:active { filter: brightness(0.95); }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
 
     #yesBtn { background: var(--yes); color: white; }
-    #noBtn { background: var(--no); color: white; }
+    #noBtn  { background: var(--no);  color: white; }
 
     .hint {
       margin-top: 12px;
@@ -107,6 +123,7 @@ button:active { filter: brightness(0.95); }
     }
   </style>
 </head>
+
 <body>
   <main class="card">
     <h1>Will you be my Valentine? 💘</h1>
@@ -115,50 +132,30 @@ button:active { filter: brightness(0.95); }
     <div class="photo-wrap">
       <img id="mainPhoto" src="images/me.jpg" alt="A photo" />
     </div>
-<div class="bottom-area">
-  <div id="message" aria-live="polite"></div>
 
-  <div class="buttons" id="buttonsWrap">
-    <button id="yesBtn" type="button">Yes</button>
-    <button id="noBtn" type="button">No</button>
-  </div>
-</div>
-    <div id="message" aria-live="polite"></div>
+    <div class="bottom-area">
+      <div id="message" aria-live="polite"></div>
 
-    <div class="buttons">
-      <button id="yesBtn" type="button">Yes</button>
-      <button id="noBtn" type="button">No</button>
+      <div class="buttons">
+        <button id="yesBtn" type="button">Yes</button>
+        <button id="noBtn" type="button">No</button>
+      </div>
     </div>
 
     <div class="hint">don't be naughty and click no</div>
   </main>
 
   <script>
-    // ===========
-    // EDIT THESE
-    // ===========
-    // Put your images in an /images folder next to this HTML file (or use full URLs).
+    // =========================
+    // DO NOT CHANGE FILE NAMES
+    // =========================
     const initialImage = "images/me.jpg";
-
-    // Image to show when she clicks YES
     const yesImage = "images/yes.jpg";
-
-    // 20 images to cycle through for each NO click (1..20).
-    // You can repeat images if you want, but there should be 20 entries to match your spec.
     const noImages = Array.from({ length: 10 }, (_, i) => `images/no-${i + 1}.jpg`);
 
-    // Optional: message for the "No" path
-    const noMessagePrefix = ""; // e.g. "Please reconsider... "
-  const buttonsWrap = document.getElementById("buttonsWrap");
-
-  function updateButtonsLayoutSpace() {
-  // Measure the actual rendered height of the buttons container
-  // and force the layout to reserve at least that much space.
-  const h = buttonsWrap.getBoundingClientRect().height;
-  buttonsWrap.style.minHeight = `${Math.ceil(h)}px`;
-    // ===========
-    // LOGIC
-    // ===========
+    // =========================
+    // ELEMENTS & STATE
+    // =========================
     const img = document.getElementById("mainPhoto");
     const msg = document.getElementById("message");
     const yesBtn = document.getElementById("yesBtn");
@@ -170,23 +167,40 @@ button:active { filter: brightness(0.95); }
     img.src = initialImage;
 
     function setImage(src) {
-      // Simple swap; browser handles caching
       img.src = src;
     }
 
-   function updateYesButtonSize() {
-  const capped = Math.min(noCount, 10);
-  const scale = 1 + (0.011 * capped);
-  yesBtn.style.transform = `scale(${scale})`;
-}
+    /**
+     * Instead of transform: scale(...), we change real layout properties:
+     * - font-size
+     * - padding
+     * That makes the layout reflow naturally and prevents overlapping.
+     */
+    function applyButtonSizes() {
+      // Cap at 10 as per your current setup
+      const capped = Math.min(noCount, 10);
 
-function updateNoButtonSize() {
-  const capped = Math.min(noCount, 10);
-  const minScale = 0.3;
-  const scale = Math.max(minScale, 1 - (0.04 * capped));
-  noBtn.style.transform = `scale(${scale})`;
-}
-    updateButtonsLayoutSpace();
+      // YES grows slightly each NO click
+      // Baseline: font 16, padding 14/18
+      const yesFont = 16 + (capped * 1.4);         // grows to ~30 at 10
+      const yesPadY = 14 + (capped * 1.1);         // grows to ~25 at 10
+      const yesPadX = 18 + (capped * 1.6);         // grows to ~34 at 10
+
+      // NO shrinks slightly each NO click, with minimums
+      const noFont = Math.max(12, 16 - (capped * 0.6));   // down to ~10 but clamped at 12
+      const noPadY = Math.max(8, 14 - (capped * 0.7));    // down to 7 but clamped at 8
+      const noPadX = Math.max(10, 18 - (capped * 0.9));   // clamped at 10
+
+      yesBtn.style.fontSize = `${yesFont}px`;
+      yesBtn.style.padding = `${yesPadY}px ${yesPadX}px`;
+
+      noBtn.style.fontSize = `${noFont}px`;
+      noBtn.style.padding = `${noPadY}px ${noPadX}px`;
+    }
+
+    // Initialize sizes
+    applyButtonSizes();
+
     yesBtn.addEventListener("click", () => {
       if (locked) return;
       locked = true;
@@ -194,40 +208,26 @@ function updateNoButtonSize() {
       setImage(yesImage);
       msg.textContent = "hehe see you on the 13th🥳💖";
 
-      // Optional: disable NO after YES
+      // Disable NO after YES
       noBtn.disabled = true;
-
-      // Keep YES clickable or disable it—your choice:
-      // yesBtn.disabled = true;
     });
 
     noBtn.addEventListener("click", () => {
-  if (locked) return;
-  if (noCount >= 10) return;
+      if (locked) return;
 
-  noCount += 1;
+      // Only change state up to the 10th click (matches your noImages length)
+      if (noCount >= 10) return;
 
-  setImage(noImages[noCount - 1]);
-  updateYesButtonSize();
-  updateNoButtonSize();
+      noCount += 1;
 
-  updateButtonsLayoutSpace(); // <-- key line
-
-  msg.textContent = "";
-});
-      // Swap image for this click
+      // Swap image
       setImage(noImages[noCount - 1]);
 
-      // Grow YES button
-      updateYesButtonSize();
-window.addEventListener("load", updateButtonsLayoutSpace);
-window.addEventListener("resize", updateButtonsLayoutSpace);
-      // Optional text feedback (can be blank)
-      if (noMessagePrefix) {
-        msg.textContent = `${noMessagePrefix}${noCount}/10`;
-      } else {
-        msg.textContent = ""; // keep clean unless you want teasing text
-      }
+      // Update button sizes (YES up, NO down)
+      applyButtonSizes();
+
+      // Clear message (or put teasing text if you want)
+      msg.textContent = "";
     });
   </script>
 </body>
