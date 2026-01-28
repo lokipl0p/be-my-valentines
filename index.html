@@ -140,7 +140,7 @@
 
     // 20 images to cycle through for each NO click (1..20).
     // You can repeat images if you want, but there should be 20 entries to match your spec.
-    const noImages = Array.from({ length: 20 }, (_, i) => `images/no-${i + 1}.jpg`);
+    const noImages = Array.from({ length: 10 }, (_, i) => `images/no-${i + 1}.jpg`);
 
     // Optional: message for the "No" path
     const noMessagePrefix = ""; // e.g. "Please reconsider... "
@@ -166,13 +166,13 @@
     function updateYesButtonSize() {
       // Increase yes button scale a bit each NO click, capped at 20.
       // At 20 clicks, scale = 1 + (0.12 * 20) = 3.4 (big but still manageable on mobile)
-      const capped = Math.min(noCount, 20);
-      const scale = 1 + (0.12 * capped);
+      const capped = Math.min(noCount, 10);
+      const scale = 1 + (0.14 * capped);
       yesBtn.style.transform = `scale(${scale})`;
     }
     function updateNoButtonSize() {
   // Decrease NO button scale per click, capped at 20
-  const capped = Math.min(noCount, 20);
+  const capped = Math.min(noCount, 10);
 
   // Minimum scale so it never disappears
   const minScale = 0.4;
@@ -208,7 +208,7 @@
       if (locked) return;
 
       // Only change state up to the 20th click
-      if (noCount >= 20) {
+      if (noCount >= 10) {
         return; // 21 clicks and beyond: no changes
       }
 
@@ -222,7 +222,7 @@
 
       // Optional text feedback (can be blank)
       if (noMessagePrefix) {
-        msg.textContent = `${noMessagePrefix}${noCount}/20`;
+        msg.textContent = `${noMessagePrefix}${noCount}/10`;
       } else {
         msg.textContent = ""; // keep clean unless you want teasing text
       }
